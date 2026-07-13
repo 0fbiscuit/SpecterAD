@@ -1,0 +1,64 @@
+# Edge Weight Configuration for Mini BloodHound
+#
+# Each edge type has three risk dimensions:
+#   detection:  0.0 (silent/undetectable) → 1.0 (very noisy, triggers alerts)
+#   failure:    0.0 (always works) → 1.0 (likely to fail or require conditions)
+#   complexity: 0.0 (trivial, script-kiddie) → 1.0 (expert-level, multi-step)
+#
+# Lower composite weight = more attractive attack path.
+# Dijkstra finds the "quietest" path by minimizing total composite weight.
+
+weights:
+  # ── ACL / Permission-based (generally quiet) ──
+  GenericAll:           {detection: 0.1, failure: 0.05, complexity: 0.2}
+  GenericWrite:         {detection: 0.15, failure: 0.05, complexity: 0.2}
+  WriteDacl:            {detection: 0.2, failure: 0.05, complexity: 0.3}
+  WriteOwner:           {detection: 0.2, failure: 0.05, complexity: 0.3}
+  Owns:                 {detection: 0.05, failure: 0.02, complexity: 0.1}
+  AllExtendedRights:    {detection: 0.15, failure: 0.05, complexity: 0.2}
+  ForceChangePassword:  {detection: 0.2, failure: 0.1, complexity: 0.1}
+  AddMember:            {detection: 0.1, failure: 0.05, complexity: 0.1}
+  AddSelf:              {detection: 0.1, failure: 0.05, complexity: 0.1}
+  AddKeyCredentialLink: {detection: 0.3, failure: 0.1, complexity: 0.4}
+  WriteSPN:             {detection: 0.15, failure: 0.05, complexity: 0.2}
+  WriteAccountRestrictions: {detection: 0.2, failure: 0.1, complexity: 0.3}
+
+  # ── Lateral Movement (noisier) ──
+  AdminTo:              {detection: 0.4, failure: 0.2, complexity: 0.3}
+  CanRDP:               {detection: 0.7, failure: 0.4, complexity: 0.3}
+  CanPSRemote:          {detection: 0.5, failure: 0.3, complexity: 0.3}
+  ExecuteDCOM:          {detection: 0.5, failure: 0.3, complexity: 0.4}
+  SQLAdmin:             {detection: 0.4, failure: 0.3, complexity: 0.4}
+
+  # ── Delegation ──
+  AllowedToDelegate:    {detection: 0.3, failure: 0.2, complexity: 0.5}
+  AllowedToAct:         {detection: 0.3, failure: 0.2, complexity: 0.5}
+
+  # ── Credential Access ──
+  HasSession:           {detection: 0.5, failure: 0.3, complexity: 0.4}
+  ReadLAPSPassword:     {detection: 0.2, failure: 0.05, complexity: 0.2}
+  ReadGMSAPassword:     {detection: 0.15, failure: 0.05, complexity: 0.2}
+  DCSync:               {detection: 0.8, failure: 0.1, complexity: 0.5}
+  DumpSMSAPassword:     {detection: 0.3, failure: 0.15, complexity: 0.3}
+  HasSIDHistory:        {detection: 0.05, failure: 0.02, complexity: 0.1}
+
+  # ── Group Membership (zero cost — not an attack step) ──
+  MemberOf:             {detection: 0.0, failure: 0.0, complexity: 0.0}
+
+  # ── ADCS ──
+  ADCSESC1:             {detection: 0.3, failure: 0.15, complexity: 0.5}
+  ADCSESC3:             {detection: 0.35, failure: 0.2, complexity: 0.5}
+  ADCSESC4:             {detection: 0.3, failure: 0.1, complexity: 0.6}
+  GoldenCert:           {detection: 0.7, failure: 0.2, complexity: 0.7}
+  ManageCA:             {detection: 0.4, failure: 0.1, complexity: 0.5}
+  ManageCertificates:   {detection: 0.4, failure: 0.1, complexity: 0.5}
+
+  # ── Structural (non-traversable, but weight defined for completeness) ──
+  GPLink:               {detection: 0.0, failure: 0.0, complexity: 0.0}
+  Contains:             {detection: 0.0, failure: 0.0, complexity: 0.0}
+  DCFor:                {detection: 0.0, failure: 0.0, complexity: 0.0}
+
+formula:
+  detection_weight: 0.4
+  failure_weight: 0.3
+  complexity_weight: 0.3
