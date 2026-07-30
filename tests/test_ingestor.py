@@ -1,4 +1,4 @@
-﻿"""Unit tests for Phase 1: Data Ingestion.
+"""Unit tests for Phase 1: Data Ingestion.
 
 Tests cover:
 - Loader: ZIP and directory discovery
@@ -37,14 +37,16 @@ class TestDiscoverJsonInZip:
     """Tests for loading JSON from a SharpHound ZIP."""
 
     def test_load_zip_discovers_all_files(self, sample_zip: Path) -> None:
-        """ZIP with 4 JSON files should yield 4 tuples."""
+        """ZIP with 6 JSON files should yield 6 tuples."""
         results = list(discover_json_files(sample_zip))
-        assert len(results) == 4
+        assert len(results) == 6
         filenames = {r[0] for r in results}
         assert "users.json" in filenames
         assert "computers.json" in filenames
         assert "groups.json" in filenames
         assert "domains.json" in filenames
+        assert "certtemplates.json" in filenames
+        assert "azusers.json" in filenames
 
     def test_load_zip_returns_bytes(self, sample_zip: Path) -> None:
         """Each yielded item should contain raw bytes."""
@@ -75,7 +77,7 @@ class TestDiscoverJsonInDir:
     def test_load_dir(self, fixtures_dir: Path) -> None:
         """Fixture directory should yield all .json files."""
         results = list(discover_json_files(fixtures_dir))
-        assert len(results) == 4
+        assert len(results) == 6
 
     def test_load_dir_empty(self, tmp_path: Path) -> None:
         """Empty directory should raise IngestionError."""
@@ -330,8 +332,8 @@ class TestNormalizeObjects:
         raw_data = load_sharphound_data(fixtures_dir)
         nodes = normalize_objects(raw_data)
 
-        # We expect 3 users + 1 computer + 2 groups + 1 domain = 7 nodes
-        assert len(nodes) == 7
+        # We expect 3 users + 1 computer + 2 groups + 1 domain + 5 certtemplates + 7 azusers = 19 nodes
+        assert len(nodes) == 19
 
         # Verify specific nodes exist by SID
         assert "S-1-5-21-1111-2222-3333-1001" in nodes  # D.QUAN
@@ -431,13 +433,13 @@ class TestFullLoadPipeline:
         """Full pipeline from ZIP file → dict of ADNodes."""
         raw_data = load_sharphound_data(sample_zip)
         nodes = normalize_objects(raw_data)
-        assert len(nodes) == 7
+        assert len(nodes) == 19
 
     def test_load_from_directory(self, fixtures_dir: Path) -> None:
         """Full pipeline from directory → dict of ADNodes."""
         raw_data = load_sharphound_data(fixtures_dir)
         nodes = normalize_objects(raw_data)
-        assert len(nodes) == 7
+        assert len(nodes) == 19
 
     def test_zip_and_dir_produce_same_results(
         self, sample_zip: Path, fixtures_dir: Path

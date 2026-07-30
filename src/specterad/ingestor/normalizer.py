@@ -1,4 +1,4 @@
-﻿"""Normalizer — transform raw SharpHound JSON dicts into ADNode objects.
+"""Normalizer — transform raw SharpHound JSON dicts into ADNode objects.
 
 Handles:
 - ObjectIdentifier → SID format validation
@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from specterad.ingestor.exceptions import IngestionError
+from specterad.ingestor.azure_parser import is_azure_meta_type, normalize_azure_object
 from specterad.models.node import ADNode, META_TYPE_MAP, NodeType
 
 logger = logging.getLogger(__name__)
@@ -163,9 +164,10 @@ def normalize_single_object(
 def normalize_objects(
     raw_data: dict[str, list[dict]],
 ) -> dict[str, ADNode]:
-    """Normalize all raw SharpHound objects into a dict of ADNode.
+    """Normalize all raw SharpHound/AzureHound objects into a dict of ADNode.
 
     This is the main entry point for Phase 1 normalization.
+    Azure meta types are automatically routed through the Azure parser.
 
     Args:
         raw_data: Output from ``load_sharphound_data()`` — dict of
@@ -179,8 +181,30 @@ def normalize_objects(
     """
     nodes: dict[str, ADNode] = {}
     skipped = 0
+    azure_count = 0
 
     for meta_type, objects in raw_data.items():
+        # Route Azure types through azure_parser
+        if is_azure_meta_type(meta_type):
+            node_type = META_TYPE_MAP.get(meta_type)
+            if node_type is None:
+                logger.warning(
+                    "Unknown Azure meta.type '%s' — skipping %d objects",
+                    meta_type, len(objects),
+                )
+                continue
+
+            for raw_obj in objects:
+                node = normalize_azure_object(raw_obj, node_type)
+                if node is None:
+                    skipped += 1
+                    continue
+                if node.object_id not in nodes:
+                    nodes[node.object_id] = node
+                    azure_count += 1
+            continue
+
+        # Standard AD path
         node_type = META_TYPE_MAP.get(meta_type)
         if node_type is None:
             logger.warning(
@@ -206,6 +230,7 @@ def normalize_objects(
             nodes[node.object_id] = node
 
     logger.info(
-        "Normalized %d nodes (%d skipped/deleted)", len(nodes), skipped
+        "Normalized %d nodes (%d AD + %d Azure, %d skipped/deleted)",
+        len(nodes), len(nodes) - azure_count, azure_count, skipped,
     )
     return nodes

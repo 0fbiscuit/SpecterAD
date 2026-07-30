@@ -22,21 +22,28 @@ from rich.console import Console
 
 from specterad.engine.pathfinder import Pathfinder
 from specterad.engine.queries import QueryEngine
+from specterad.engine.inventory import InventoryEngine
+from specterad.engine.dossier import DossierEngine
+from specterad.engine.remediation import RemediationEngine
 from specterad.ingestor.loader import load_sharphound_data
 from specterad.ingestor.normalizer import normalize_objects
 from specterad.models.graph import ADGraph, create_ad_graph
 from specterad.output.console import ConsoleRenderer
 from specterad.output.export import export_csv, export_dot, export_json
+from specterad.output.csv_pack import export_csv_pack
 
 console = Console()
 logger = logging.getLogger("specterad")
 
 # Module-level state for loaded graph (reused across subcommands)
-_state: dict[str, ADGraph | Pathfinder | QueryEngine | ConsoleRenderer | None] = {
+_state: dict[str, Any] = {
     "ad_graph": None,
     "pathfinder": None,
     "queries": None,
     "renderer": None,
+    "inventory": None,
+    "dossier": None,
+    "remediation": None,
 }
 
 
@@ -78,6 +85,9 @@ def _ensure_loaded(data_path: str | Path | None) -> None:
         _state["pathfinder"] = Pathfinder(ag)
         _state["queries"] = QueryEngine(ag)
         _state["renderer"] = ConsoleRenderer(ag, console)
+        _state["inventory"] = InventoryEngine(ag)
+        _state["dossier"] = DossierEngine(ag, _state["pathfinder"])
+        _state["remediation"] = RemediationEngine(ag, _state["pathfinder"])
 
 
 # ──────────────────────────────────────────────
@@ -138,6 +148,9 @@ def cmd_load(ctx: click.Context, path: str) -> None:
     _state["pathfinder"] = Pathfinder(ag)
     _state["queries"] = QueryEngine(ag)
     _state["renderer"] = ConsoleRenderer(ag, console)
+    _state["inventory"] = InventoryEngine(ag)
+    _state["dossier"] = DossierEngine(ag, _state["pathfinder"])
+    _state["remediation"] = RemediationEngine(ag, _state["pathfinder"])
 
     renderer: ConsoleRenderer = _state["renderer"]  # type: ignore
     stats = ag.summary()
@@ -290,7 +303,11 @@ def cmd_path(
     "query_name",
     type=click.Choice([
         "kerberoastable", "asreproast", "unconstrained",
-        "dcsync", "da-sessions", "hvt", "all-users", "all-groups", "all-computers", "all",
+        "dcsync", "da-sessions", "hvt",
+        "shadow-creds", "pwd-in-desc", "pwd-never-expires",
+        "pwd-not-required", "priv-roast",
+        "domain-trusts", "rbcd-configurable",
+        "all-users", "all-groups", "all-computers", "all",
     ]),
 )
 @click.pass_context
@@ -310,6 +327,16 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
         da-sessions       Computers with DA sessions
 
         hvt               All High-Value Targets
+
+        shadow-creds      Principals with AddKeyCredentialLink
+
+        pwd-in-desc       Users with passwords in description
+
+        pwd-never-expires Users with PasswordNeverExpires
+
+        pwd-not-required  Users with PASSWD_NOTREQD
+
+        priv-roast        Roastable users with admin privileges
 
         all-users         List all users
 
@@ -332,6 +359,13 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
         "dcsync": qe.dcsync_principals,
         "da-sessions": qe.da_sessions,
         "hvt": qe.high_value_targets,
+        "shadow-creds": qe.shadow_credentials,
+        "pwd-in-desc": qe.password_in_description,
+        "pwd-never-expires": qe.password_never_expires,
+        "pwd-not-required": qe.password_not_required,
+        "priv-roast": qe.privileged_roast,
+        "domain-trusts": qe.domain_trusts,
+        "rbcd-configurable": qe.rbcd_configurable,
         "all-users": qe.all_users,
         "all-groups": qe.all_groups,
         "all-computers": qe.all_computers,
@@ -354,29 +388,139 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
 def cmd_stats(ctx: click.Context) -> None:
     """Display detailed graph statistics."""
     _ensure_loaded(ctx.obj.get("data_path"))
-    ag: ADGraph = _state["ad_graph"]  # type: ignore
+    inv: InventoryEngine = _state["inventory"]  # type: ignore
     renderer: ConsoleRenderer = _state["renderer"]  # type: ignore
 
     console.print()
-    stats = ag.summary()
+    stats = inv.stats_with_percentages()
     renderer.render_stats(stats)
+    console.print()
+
+
+@cli.command("inventory")
+@click.argument(
+    "inv_type",
+    type=click.Choice(["pwd-age", "stale", "groups", "structural", "all"]),
+)
+@click.option(
+    "--days", type=int, default=90,
+    help="Threshold in days for stale account detection.",
+)
+@click.pass_context
+def cmd_inventory(ctx: click.Context, inv_type: str, days: int) -> None:
+    """Run inventory analysis on loaded data.
+
+    Available types:
+
+        pwd-age       Password age distribution ladder
+
+        stale         Stale/inactive accounts (configurable --days)
+
+        groups        Privilege group membership (DA, EA, SA, Admins)
+
+        structural    Domains, DCs, trusts, OUs
+
+        all           Run all inventory analyses
+    """
+    _ensure_loaded(ctx.obj.get("data_path"))
+    inv: InventoryEngine = _state["inventory"]  # type: ignore
+    renderer: ConsoleRenderer = _state["renderer"]  # type: ignore
+
+    console.print()
+
+    inv_map = {
+        "pwd-age": inv.password_age_ladder,
+        "stale": lambda: inv.stale_accounts(days=days),
+        "groups": inv.privilege_group_membership,
+        "structural": inv.structural_inventory,
+    }
+
+    if inv_type == "all":
+        results = inv.run_all()
+        for result in results:
+            renderer.render_inventory(result)
+            console.print()
+    else:
+        result = inv_map[inv_type]()
+        renderer.render_inventory(result)
+
+    console.print()
+
+
+@cli.command("dossier")
+@click.argument("identifier")
+@click.pass_context
+def cmd_dossier(ctx: click.Context, identifier: str) -> None:
+    """Generate a comprehensive report for a single AD object.
+
+    IDENTIFIER can be a SID, full name, or partial name.
+
+    Examples:
+
+        specterad dossier D.QUAN -d data.zip
+
+        specterad dossier ADMINISTRATOR -d data.zip
+
+        specterad dossier S-1-5-21-1234-5678-512 -d data.zip
+    """
+    _ensure_loaded(ctx.obj.get("data_path"))
+    dossier_eng: DossierEngine = _state["dossier"]  # type: ignore
+    renderer: ConsoleRenderer = _state["renderer"]  # type: ignore
+
+    console.print()
+
+    try:
+        report = dossier_eng.node_dossier(identifier)
+        renderer.render_dossier(report)
+    except ValueError as exc:
+        console.print(f"[bold red][x][/bold red] {exc}")
+        sys.exit(1)
+
+    console.print()
+
+
+@cli.command("remediate")
+@click.option(
+    "--top", type=int, default=10,
+    help="Number of top choke points to display.",
+)
+@click.pass_context
+def cmd_remediate(ctx: click.Context, top: int) -> None:
+    """Analyze attack paths and recommend remediation actions.
+
+    Identifies the busiest edges (choke points) across all attack paths
+    to High-Value Targets, and provides actionable removal recommendations.
+
+    Examples:
+
+        specterad remediate -d data.zip
+
+        specterad remediate --top 20 -d data.zip
+    """
+    _ensure_loaded(ctx.obj.get("data_path"))
+    rem_eng: RemediationEngine = _state["remediation"]  # type: ignore
+    renderer: ConsoleRenderer = _state["renderer"]  # type: ignore
+
+    console.print()
+    report = rem_eng.busiest_path_ranking(top_n=top)
+    renderer.render_remediation(report)
     console.print()
 
 
 @cli.command("export")
 @click.argument(
     "format_type",
-    type=click.Choice(["dot", "csv", "json"]),
+    type=click.Choice(["dot", "csv", "json", "csv-pack"]),
 )
 @click.option(
     "--output", "-o",
     type=click.Path(),
     default=None,
-    help="Output file path. Defaults to specterad_export.<format>",
+    help="Output file/directory path. Defaults to specterad_export.<format>",
 )
 @click.pass_context
 def cmd_export(ctx: click.Context, format_type: str, output: str | None) -> None:
-    """Export graph data to DOT, CSV, or JSON format.
+    """Export graph data to DOT, CSV, JSON, or CSV-pack format.
 
     Examples:
 
@@ -385,9 +529,26 @@ def cmd_export(ctx: click.Context, format_type: str, output: str | None) -> None
         specterad export csv -o edges.csv -d data.zip
 
         specterad export json -o data.json -d data.zip
+
+        specterad export csv-pack -o ./pack_output -d data.zip
     """
     _ensure_loaded(ctx.obj.get("data_path"))
     ag: ADGraph = _state["ad_graph"]  # type: ignore
+
+    # Handle csv-pack separately (outputs a directory)
+    if format_type == "csv-pack":
+        if output is None:
+            output = "specterad_csv_pack"
+        try:
+            result_dir = export_csv_pack(ag, output)
+            console.print(
+                f"\n[bold green][+][/bold green] CSV pack exported to "
+                f"[bold]{result_dir}[/bold] (12 files)\n"
+            )
+        except Exception as exc:
+            console.print(f"[bold red][x][/bold red] Export failed: {exc}")
+            sys.exit(1)
+        return
 
     # Default output path
     if output is None:

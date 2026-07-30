@@ -1,4 +1,4 @@
-"""AD node models — NodeType enum and ADNode dataclass."""
+"""AD and Azure node models — NodeType enum and ADNode dataclass."""
 
 from __future__ import annotations
 
@@ -19,6 +19,20 @@ class NodeType(str, Enum):
     CERTTEMPLATE = "CertTemplate"
     CONTAINER = "Container"
 
+    # ── Azure / Entra ID ──
+    AZ_TENANT = "AZTenant"
+    AZ_USER = "AZUser"
+    AZ_GROUP = "AZGroup"
+    AZ_APP = "AZApp"
+    AZ_SERVICE_PRINCIPAL = "AZServicePrincipal"
+    AZ_SUBSCRIPTION = "AZSubscription"
+    AZ_RESOURCE_GROUP = "AZResourceGroup"
+    AZ_VM = "AZVM"
+    AZ_KEY_VAULT = "AZKeyVault"
+    AZ_DEVICE = "AZDevice"
+    AZ_MANAGEMENT_GROUP = "AZManagementGroup"
+    AZ_ROLE = "AZRole"
+
 
 # Map from SharpHound meta.type (lowercase) → NodeType
 META_TYPE_MAP: dict[str, NodeType] = {
@@ -30,6 +44,19 @@ META_TYPE_MAP: dict[str, NodeType] = {
     "gpos": NodeType.GPO,
     "certtemplates": NodeType.CERTTEMPLATE,
     "containers": NodeType.CONTAINER,
+    # Azure / Entra ID types (AzureHound meta.type)
+    "aztenants": NodeType.AZ_TENANT,
+    "azusers": NodeType.AZ_USER,
+    "azgroups": NodeType.AZ_GROUP,
+    "azapps": NodeType.AZ_APP,
+    "azserviceprincipals": NodeType.AZ_SERVICE_PRINCIPAL,
+    "azsubscriptions": NodeType.AZ_SUBSCRIPTION,
+    "azresourcegroups": NodeType.AZ_RESOURCE_GROUP,
+    "azvms": NodeType.AZ_VM,
+    "azkeyvaults": NodeType.AZ_KEY_VAULT,
+    "azdevices": NodeType.AZ_DEVICE,
+    "azmanagementgroups": NodeType.AZ_MANAGEMENT_GROUP,
+    "azroles": NodeType.AZ_ROLE,
 }
 
 

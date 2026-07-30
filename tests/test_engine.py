@@ -1,4 +1,4 @@
-﻿"""Unit tests for Phase 3: Pathfinding Engine.
+"""Unit tests for Phase 3: Pathfinding Engine.
 
 Tests cover:
 - Edge weights: YAML loading, composite calculation, defaults
@@ -524,7 +524,7 @@ class TestRunAll:
         qe = QueryEngine(ag)
 
         results = qe.run_all()
-        assert len(results) == 9
+        assert len(results) == 16
         assert all(isinstance(r, QueryResult) for r in results)
 
 

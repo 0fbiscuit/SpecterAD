@@ -1,4 +1,4 @@
-﻿"""Graph Builder — construct nx.DiGraph from dict[str, ADNode].
+"""Graph Builder — construct nx.DiGraph from dict[str, ADNode].
 
 Builds nodes and edges from:
 1. ADNode properties → graph node attributes
@@ -345,6 +345,61 @@ def _add_gplink_edges(
     return count
 
 
+def _add_trust_edges(
+    graph: nx.DiGraph,
+    nodes: dict[str, ADNode],
+) -> int:
+    """Create TrustedBy edges from Domain trust relationships.
+
+    SharpHound stores trust data in:
+    - Domain.Trusts = [{TargetDomainSid, TrustDirection, TrustType, ...}]
+    - Domain.TrustedBy = [{ObjectIdentifier, ...}]
+
+    Edge direction: SourceDomain -[TrustedBy]-> TargetDomain
+    """
+    count = 0
+    for sid, node in nodes.items():
+        if node.node_type != NodeType.DOMAIN:
+            continue
+
+        # Handle Trusts relation
+        trusts = node.extra_relations.get("Trusts", [])
+        for trust in trusts:
+            target_sid = trust.get("TargetDomainSid", "") or trust.get("ObjectIdentifier", "")
+            target_sid = target_sid.strip().upper()
+            if not target_sid or target_sid not in graph:
+                continue
+
+            trust_type = trust.get("TrustType", "Unknown")
+            trust_direction = trust.get("TrustDirection", 0)
+            is_transitive = trust.get("IsTransitive", False)
+
+            graph.add_edge(
+                sid, target_sid,
+                edge_type=EdgeType.TRUSTED_BY.value,
+                trust_type=trust_type,
+                trust_direction=trust_direction,
+                is_transitive=is_transitive,
+            )
+            count += 1
+
+        # Handle TrustedBy relation
+        trusted_by = node.extra_relations.get("TrustedBy", [])
+        for entry in trusted_by:
+            source_sid = entry.get("ObjectIdentifier", "").strip().upper()
+            if not source_sid or source_sid not in graph:
+                continue
+
+            graph.add_edge(
+                source_sid, sid,
+                edge_type=EdgeType.TRUSTED_BY.value,
+            )
+            count += 1
+
+    logger.info("Added %d Trust edges", count)
+    return count
+
+
 def build_graph(nodes: dict[str, ADNode]) -> nx.DiGraph:
     """Build a complete nx.DiGraph from parsed ADNode objects.
 
@@ -371,6 +426,7 @@ def build_graph(nodes: dict[str, ADNode]) -> nx.DiGraph:
     _add_sid_history_edges(graph, nodes)
     _add_contains_edges(graph, nodes)
     _add_gplink_edges(graph, nodes)
+    _add_trust_edges(graph, nodes)
 
     logger.info(
         "Graph built: %d nodes, %d edges",

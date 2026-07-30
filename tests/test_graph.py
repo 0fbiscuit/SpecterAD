@@ -1,4 +1,4 @@
-﻿"""Unit tests for Phase 2: Graph Construction.
+"""Unit tests for Phase 2: Graph Construction.
 
 Tests cover:
 - Edge registry: EdgeType enum, traversability, ACE mapping
@@ -614,8 +614,8 @@ class TestFullPipelineIntegration:
         nodes = normalize_objects(raw_data)
         ag = create_ad_graph(nodes)
 
-        # 7 nodes from fixtures
-        assert ag.graph.number_of_nodes() == 7
+        # 19 nodes from fixtures (7 AD + 5 certtemplates + 7 azusers)
+        assert ag.graph.number_of_nodes() == 19
         assert ag.graph.number_of_edges() > 0
 
         # MemberOf edges should exist
@@ -653,6 +653,6 @@ class TestFullPipelineIntegration:
         nodes = normalize_objects(raw_data)
         ag = create_ad_graph(nodes)
 
-        assert ag.graph.number_of_nodes() == 7
+        assert ag.graph.number_of_nodes() == 19
         assert len(ag.high_value_targets) > 0
         assert ag.resolve("ADMINISTRATOR") == "S-1-5-21-1111-2222-3333-500"

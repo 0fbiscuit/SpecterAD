@@ -1,0 +1,83 @@
+{
+    "data": [
+        {
+            "ObjectIdentifier": "az-user-1",
+            "Properties": {
+                "displayname": "Azure Admin User",
+                "name": "azadmin@tenant.onmicrosoft.com"
+            },
+            "Roles": [
+                {
+                    "ObjectIdentifier": "az-role-global-admin"
+                }
+            ],
+            "MemberOf": [
+                {
+                    "ObjectIdentifier": "az-group-1"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "az-user-2",
+            "Properties": {
+                "displayname": "Regular Azure User",
+                "name": "azuser@tenant.onmicrosoft.com"
+            },
+            "RunsAs": [
+                {
+                    "ObjectIdentifier": "az-sp-1"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "az-group-1",
+            "Properties": {
+                "displayname": "VM Admins Group",
+                "name": "vmadmins@tenant.onmicrosoft.com"
+            },
+            "Members": [
+                {
+                    "ObjectIdentifier": "az-user-1"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "az-role-global-admin",
+            "Properties": {
+                "displayname": "Global Administrator",
+                "name": "Global Administrator"
+            }
+        },
+        {
+            "ObjectIdentifier": "az-sp-1",
+            "Properties": {
+                "displayname": "Vuln SP",
+                "name": "Vuln SP"
+            },
+            "Owners": [
+                {
+                    "ObjectIdentifier": "az-user-2"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "az-vm-1",
+            "Properties": {
+                "displayname": "Prod VM",
+                "name": "prod-vm"
+            }
+        },
+        {
+            "ObjectIdentifier": "az-kv-1",
+            "Properties": {
+                "displayname": "Prod KeyVault",
+                "name": "prod-kv"
+            }
+        }
+    ],
+    "meta": {
+        "methods": 0,
+        "type": "azusers",
+        "count": 7
+    }
+}

@@ -1,4 +1,4 @@
-﻿"""Rich console renderer -- beautiful CLI output for attack paths and queries.
+"""Rich console renderer -- beautiful CLI output for attack paths and queries.
 
 Provides:
 - render_path: Attack path as a Rich Tree with color-coded nodes and edges
@@ -19,6 +19,9 @@ from rich.text import Text
 from rich.tree import Tree
 
 from specterad.engine.queries import QueryResult
+from specterad.engine.inventory import InventoryResult
+from specterad.engine.dossier import DossierReport
+from specterad.engine.remediation import RemediationReport
 from specterad.models.graph import ADGraph
 from specterad.models.path import AttackPath, PathStep
 from specterad.output.formatter import (
@@ -175,6 +178,14 @@ class ConsoleRenderer:
             bar = "=" * min(count, 30)
             lines.append(f"    {etype:<25} {bar} {count}")
 
+        # Percentage stats (if available from InventoryEngine)
+        pcts = stats.get("percentages", {})
+        if pcts:
+            lines.append("\n  [bold]Security Posture:[/bold]")
+            for label, pct in pcts.items():
+                display_label = label.replace("_", " ").title()
+                lines.append(f"    {display_label:<35} {pct}")
+
         panel = Panel(
             "\n".join(lines),
             title="[bold]SpecterAD[/bold]",
@@ -201,3 +212,163 @@ class ConsoleRenderer:
             color = get_node_color(ntype)
             self.console.print(f"    [{color}]> {ntype}s: {count}[/{color}]")
         self.console.print()
+
+    def render_inventory(self, result: InventoryResult) -> None:
+        """Render an inventory analysis result."""
+        lines: list[str] = []
+        lines.append(f"[bold]{result.section_name}[/bold]")
+        lines.append(f"[dim]{result.description}[/dim]\n")
+
+        data = result.data
+
+        if "summary" in data and "buckets" in data:
+            # Password age ladder
+            total = data.get("total_users", 1)
+            for bucket_label, count in data["summary"].items():
+                pct = (count / total * 100) if total > 0 else 0
+                bar = "#" * min(int(pct), 40)
+                lines.append(f"  {bucket_label:<20} {bar} {count} ({pct:.1f}%)")
+
+        elif "stale_users" in data:
+            # Stale accounts
+            lines.append(f"  Threshold: {data.get('threshold_days', 90)} days")
+            lines.append(f"  Stale Users:     [bold red]{data['count_users']}[/bold red]")
+            lines.append(f"  Stale Computers: [bold red]{data['count_computers']}[/bold red]")
+            if data["stale_users"]:
+                lines.append("\n  [bold]Top Stale Users:[/bold]")
+                for entry in data["stale_users"][:15]:
+                    lines.append(
+                        f"    {entry['name']:<40} "
+                        f"Last logon: {entry['last_logon_days']} days ago  "
+                        f"Enabled: {entry['enabled']}"
+                    )
+
+        elif "groups" in data:
+            # Privilege group membership
+            for _sid, ginfo in data["groups"].items():
+                lines.append(
+                    f"  [bold cyan]{ginfo['group_name']}[/bold cyan] "
+                    f"({ginfo['group_label']}) -- "
+                    f"{ginfo['member_count']} members"
+                )
+                for m in ginfo["direct_and_nested_members"][:20]:
+                    lines.append(f"    > {m['name']} ({m['type']})")
+                if ginfo["member_count"] > 20:
+                    lines.append(f"    ... and {ginfo['member_count'] - 20} more")
+                lines.append("")
+
+        elif "domains" in data:
+            # Structural inventory
+            lines.append(f"  Domains: {data['domain_count']}")
+            for d in data["domains"]:
+                lines.append(f"    > {d['name']} (Level: {d['functionallevel']})")
+            lines.append(f"  Domain Controllers: {data['dc_count']}")
+            for dc in data["domain_controllers"]:
+                lines.append(f"    > {dc['name']}")
+            lines.append(f"  Trusts: {data['trust_count']}")
+            for t in data["trusts"]:
+                lines.append(f"    > {t['source']} --[{t['type']}]--> {t['target']}")
+            lines.append(f"  OUs: {data['ou_count']}")
+
+        panel = Panel(
+            "\n".join(lines),
+            title="[bold]SpecterAD Inventory[/bold]",
+            border_style="green",
+            padding=(1, 2),
+            safe_box=True,
+        )
+        self.console.print(panel)
+
+    def render_dossier(self, report: DossierReport) -> None:
+        """Render a per-node dossier report."""
+        lines: list[str] = []
+
+        # Header
+        lines.append(f"[bold cyan]{report.name}[/bold cyan]")
+        lines.append(f"[dim]SID: {report.sid} | Type: {report.node_type}[/dim]\n")
+
+        # Key properties
+        if report.properties:
+            lines.append("[bold]Properties:[/bold]")
+            for k, v in list(report.properties.items())[:15]:
+                lines.append(f"  {k}: {v}")
+            lines.append("")
+
+        # Group memberships
+        lines.append(f"[bold]Group Memberships ({len(report.group_memberships)}):[/bold]")
+        for m in report.group_memberships[:20]:
+            depth_marker = "  " * m["depth"]
+            direct_tag = " [dim](direct)[/dim]" if m["is_direct"] else " [dim](nested)[/dim]"
+            lines.append(f"  {depth_marker}> {m['name']}{direct_tag}")
+        if len(report.group_memberships) > 20:
+            lines.append(f"  ... and {len(report.group_memberships) - 20} more")
+        lines.append("")
+
+        # Inbound edges summary
+        lines.append("[bold]Inbound Edges:[/bold]")
+        for etype, count in sorted(report.inbound_summary.items(), key=lambda x: x[1], reverse=True):
+            lines.append(f"  {etype:<25} {count}")
+        lines.append("")
+
+        # AdminTo hosts
+        lines.append(f"[bold]Admin To Hosts ({len(report.admin_to_hosts)}):[/bold]")
+        for host in report.admin_to_hosts[:20]:
+            lines.append(f"  > {host['name']} ({host['via']})")
+        if len(report.admin_to_hosts) > 20:
+            lines.append(f"  ... and {len(report.admin_to_hosts) - 20} more")
+        lines.append("")
+
+        # Paths to HVT
+        lines.append(f"[bold]Paths to HVTs ({len(report.paths_to_hvt)}):[/bold]")
+        for path in report.paths_to_hvt:
+            edge_chain = " -> ".join(s.edge_type for s in path.steps)
+            lines.append(
+                f"  > {path.target_name} "
+                f"[dim]({path.hop_count} hops, w={path.total_weight:.2f})[/dim] "
+                f"{edge_chain}"
+            )
+
+        panel = Panel(
+            "\n".join(lines),
+            title="[bold]SpecterAD Dossier[/bold]",
+            border_style="magenta",
+            padding=(1, 2),
+            safe_box=True,
+        )
+        self.console.print(panel)
+
+    def render_remediation(self, report: RemediationReport) -> None:
+        """Render remediation analysis as a Rich Table."""
+        if not report.busiest_edges:
+            self.console.print("[dim]No attack paths found for remediation analysis.[/dim]")
+            return
+
+        self.console.print(
+            f"\n  [bold]Remediation Analysis[/bold]\n"
+            f"  Paths analyzed: [bold]{report.total_paths_analyzed}[/bold]  |  "
+            f"  Unique edges: [bold]{report.total_unique_edges}[/bold]\n"
+        )
+
+        table = Table(
+            title="  Busiest Edges (Choke Points)",
+            show_lines=True,
+            safe_box=True,
+        )
+        table.add_column("#", style="dim", width=4)
+        table.add_column("Source", style="cyan")
+        table.add_column("Edge", style="yellow")
+        table.add_column("Target", style="red")
+        table.add_column("Paths", justify="right")
+        table.add_column("Remediation", max_width=50)
+
+        for i, edge in enumerate(report.busiest_edges, 1):
+            table.add_row(
+                str(i),
+                edge.source_name,
+                edge.edge_type,
+                edge.target_name,
+                str(edge.path_count),
+                edge.remediation,
+            )
+
+        self.console.print(table)

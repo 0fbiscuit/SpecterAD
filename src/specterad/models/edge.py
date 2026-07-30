@@ -1,4 +1,4 @@
-﻿"""AD edge models — EdgeType enum, traversability classification, and ACE mapping."""
+"""AD and Azure edge models — EdgeType enum, traversability classification, and ACE mapping."""
 
 from __future__ import annotations
 
@@ -51,8 +51,15 @@ class EdgeType(str, Enum):
 
     # ── Traversable: ADCS (MVP: ESC1, ESC3, ESC4) ──
     ADCSESC1 = "ADCSESC1"
+    ADCSESC2 = "ADCSESC2"
     ADCSESC3 = "ADCSESC3"
     ADCSESC4 = "ADCSESC4"
+    ADCSESC5 = "ADCSESC5"
+    ADCSESC6 = "ADCSESC6"
+    ADCSESC7 = "ADCSESC7"
+    ADCSESC8 = "ADCSESC8"
+    ADCSESC9 = "ADCSESC9"
+    ADCSESC13 = "ADCSESC13"
     GOLDEN_CERT = "GoldenCert"
     MANAGE_CA = "ManageCA"
     MANAGE_CERTIFICATES = "ManageCertificates"
@@ -61,13 +68,44 @@ class EdgeType(str, Enum):
     GP_LINK = "GPLink"
     CONTAINS = "Contains"
     DC_FOR = "DCFor"
+    TRUSTED_BY = "TrustedBy"
 
+    # ── Traversable: Composite / Derived ──
+    CAN_CONFIGURE_RBCD = "CanConfigureRBCD"
+
+    # ── Azure / Entra ID Edges ──
+    AZ_GLOBAL_ADMIN = "AZGlobalAdmin"
+    AZ_PRIVILEGED_ROLE_ADMIN = "AZPrivilegedRoleAdmin"
+    AZ_OWNER = "AZOwner"
+    AZ_CONTRIBUTOR = "AZContributor"
+    AZ_USER_ACCESS_ADMIN = "AZUserAccessAdministrator"
+    AZ_APP_ADMIN = "AZAppAdmin"
+    AZ_CLOUD_APP_ADMIN = "AZCloudAppAdmin"
+    AZ_RUN_AS = "AZRunsAs"
+    AZ_KEY_VAULT_CONTRIBUTOR = "AZKeyVaultContributor"
+    AZ_MEMBER_OF = "AZMemberOf"
+    AZ_HAS_ROLE = "AZHasRole"
+    AZ_CONTAINS = "AZContains"
+    AZ_VM_ADMIN_LOGIN = "AZVMAdminLogin"
+    AZ_VM_CONTRIBUTOR = "AZVMContributor"
+    AZ_ADD_SECRET = "AZAddSecret"
+    AZ_EXEC_COMMAND = "AZExecuteCommand"
+    AZ_RESET_PASSWORD = "AZResetPassword"
+    AZ_ADD_MEMBERS = "AZAddMembers"
+    AZ_ADD_OWNER = "AZAddOwner"
+    AZ_GRANT_ROLE = "AZGrant"
+    AZ_MANAGED_IDENTITY = "AZManagedIdentity"
 
 # Edges the pathfinding engine can walk through for attack path analysis.
+# Azure structural edges (AZContains, AZMemberOf, AZHasRole) are non-traversable.
 TRAVERSABLE_EDGES: frozenset[EdgeType] = frozenset(EdgeType) - frozenset({
     EdgeType.GP_LINK,
     EdgeType.CONTAINS,
     EdgeType.DC_FOR,
+    EdgeType.TRUSTED_BY,
+    EdgeType.AZ_CONTAINS,
+    EdgeType.AZ_MEMBER_OF,
+    EdgeType.AZ_HAS_ROLE,
 })
 
 

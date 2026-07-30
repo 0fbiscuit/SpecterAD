@@ -1,4 +1,4 @@
-﻿"""ADGraph wrapper — enriched graph with reverse lookup maps and utilities.
+"""ADGraph wrapper — enriched graph with reverse lookup maps and utilities.
 
 Wraps nx.DiGraph with:
 - nodes_by_type: quick lookup by NodeType
@@ -69,14 +69,20 @@ class ADGraph:
             return self.name_to_sid[identifier_upper]
 
         # 3. Partial name match — find names containing the input
-        matches: list[tuple[str, str]] = []
+        exact_short_matches: list[tuple[str, str]] = []
+        partial_matches: list[tuple[str, str]] = []
+        
         for name_upper, sid in self.name_to_sid.items():
             # Match on the part before @ (short name)
             short_name = name_upper.split("@")[0]
-            if short_name == identifier_upper or identifier_upper in name_upper:
-                matches.append((name_upper, sid))
+            if short_name == identifier_upper:
+                exact_short_matches.append((name_upper, sid))
+            elif identifier_upper in name_upper:
+                partial_matches.append((name_upper, sid))
+                
+        matches = exact_short_matches + partial_matches
 
-        if len(matches) == 1:
+        if len(matches) == 1 or (len(exact_short_matches) == 1):
             return matches[0][1]
         elif len(matches) > 1:
             logger.warning(

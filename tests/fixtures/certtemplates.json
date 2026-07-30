@@ -1,0 +1,88 @@
+{
+    "data": [
+        {
+            "ObjectIdentifier": "CT-ESC1",
+            "Properties": {
+                "name": "ESC1_TEMPLATE",
+                "enrolleesuppliessubject": true,
+                "ekus": ["1.3.6.1.5.5.7.3.2"]
+            },
+            "Aces": [
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-1001",
+                    "RightName": "Enroll"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "CT-ESC2",
+            "Properties": {
+                "name": "ESC2_TEMPLATE",
+                "enrolleesuppliessubject": false,
+                "ekus": ["2.5.29.37.0"]
+            },
+            "Aces": [
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-1001",
+                    "RightName": "Enroll"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "CT-ESC3",
+            "Properties": {
+                "name": "ESC3_TEMPLATE",
+                "enrolleesuppliessubject": false,
+                "ekus": ["1.3.6.1.4.1.311.20.2.1"]
+            },
+            "Aces": [
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-1001",
+                    "RightName": "Enroll"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "CT-ESC4",
+            "Properties": {
+                "name": "ESC4_TEMPLATE",
+                "enrolleesuppliessubject": false,
+                "ekus": []
+            },
+            "Aces": [
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-1001",
+                    "RightName": "WriteDacl"
+                }
+            ]
+        },
+        {
+            "ObjectIdentifier": "CA-ESC567",
+            "Properties": {
+                "name": "VULN-CA",
+                "type": "enterpriseca",
+                "sanflag": true,
+                "editflags": 262144
+            },
+            "Aces": [
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-1001",
+                    "RightName": "WriteOwner"
+                },
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-512",
+                    "RightName": "ManageCA"
+                },
+                {
+                    "PrincipalSID": "S-1-5-21-1111-2222-3333-512",
+                    "RightName": "ManageCertificates"
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "methods": 0,
+        "type": "certtemplates",
+        "count": 5
+    }
+}

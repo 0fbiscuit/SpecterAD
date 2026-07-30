@@ -1,4 +1,4 @@
-﻿"""Edge weights — risk-based weight model with YAML loader.
+"""Edge weights — risk-based weight model with YAML loader.
 
 Each edge type has three risk dimensions:
 - detection_risk: How likely the action triggers security alerts (0=silent, 1=noisy)
@@ -87,14 +87,45 @@ _DEFAULT_WEIGHTS: dict[str, dict[str, float]] = {
     "HasSIDHistory":        {"detection": 0.05, "failure": 0.02, "complexity": 0.1},
     "MemberOf":             {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
     "ADCSESC1":             {"detection": 0.3,  "failure": 0.15, "complexity": 0.5},
+    "ADCSESC2":             {"detection": 0.3,  "failure": 0.15, "complexity": 0.5},
     "ADCSESC3":             {"detection": 0.35, "failure": 0.2,  "complexity": 0.5},
     "ADCSESC4":             {"detection": 0.3,  "failure": 0.1,  "complexity": 0.6},
+    "ADCSESC5":             {"detection": 0.35, "failure": 0.15, "complexity": 0.6},
+    "ADCSESC6":             {"detection": 0.25, "failure": 0.1,  "complexity": 0.4},
+    "ADCSESC7":             {"detection": 0.4,  "failure": 0.15, "complexity": 0.6},
+    "ADCSESC8":             {"detection": 0.3,  "failure": 0.2,  "complexity": 0.5},
+    "ADCSESC9":             {"detection": 0.35, "failure": 0.2,  "complexity": 0.6},
+    "ADCSESC13":            {"detection": 0.3,  "failure": 0.15, "complexity": 0.5},
     "GoldenCert":           {"detection": 0.7,  "failure": 0.2,  "complexity": 0.7},
     "ManageCA":             {"detection": 0.4,  "failure": 0.1,  "complexity": 0.5},
     "ManageCertificates":   {"detection": 0.4,  "failure": 0.1,  "complexity": 0.5},
     "GPLink":               {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
     "Contains":             {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
     "DCFor":                {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
+    "TrustedBy":            {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
+    "CanConfigureRBCD":     {"detection": 0.3,  "failure": 0.2,  "complexity": 0.5},
+    # Azure / Entra ID
+    "AZGlobalAdmin":             {"detection": 0.1,  "failure": 0.05, "complexity": 0.2},
+    "AZPrivilegedRoleAdmin":     {"detection": 0.15, "failure": 0.05, "complexity": 0.3},
+    "AZOwner":                   {"detection": 0.1,  "failure": 0.05, "complexity": 0.2},
+    "AZContributor":             {"detection": 0.15, "failure": 0.1,  "complexity": 0.3},
+    "AZUserAccessAdministrator": {"detection": 0.15, "failure": 0.05, "complexity": 0.3},
+    "AZAppAdmin":                {"detection": 0.2,  "failure": 0.1,  "complexity": 0.3},
+    "AZCloudAppAdmin":           {"detection": 0.2,  "failure": 0.1,  "complexity": 0.3},
+    "AZRunsAs":                  {"detection": 0.1,  "failure": 0.05, "complexity": 0.1},
+    "AZKeyVaultContributor":     {"detection": 0.2,  "failure": 0.1,  "complexity": 0.3},
+    "AZMemberOf":                {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
+    "AZHasRole":                 {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
+    "AZContains":                {"detection": 0.0,  "failure": 0.0,  "complexity": 0.0},
+    "AZVMAdminLogin":            {"detection": 0.3,  "failure": 0.15, "complexity": 0.4},
+    "AZVMContributor":           {"detection": 0.2,  "failure": 0.1,  "complexity": 0.3},
+    "AZAddSecret":               {"detection": 0.25, "failure": 0.1,  "complexity": 0.4},
+    "AZExecuteCommand":          {"detection": 0.35, "failure": 0.15, "complexity": 0.5},
+    "AZResetPassword":           {"detection": 0.3,  "failure": 0.1,  "complexity": 0.3},
+    "AZAddMembers":              {"detection": 0.2,  "failure": 0.05, "complexity": 0.2},
+    "AZAddOwner":                {"detection": 0.25, "failure": 0.1,  "complexity": 0.3},
+    "AZGrant":                   {"detection": 0.2,  "failure": 0.1,  "complexity": 0.3},
+    "AZManagedIdentity":         {"detection": 0.1,  "failure": 0.05, "complexity": 0.2},
 }
 
 
