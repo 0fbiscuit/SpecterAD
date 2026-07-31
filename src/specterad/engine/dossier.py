@@ -185,7 +185,7 @@ class DossierEngine:
 
         # Paths to HVT (limited to avoid long computation)
         try:
-            hvt_paths = self.pathfinder.paths_to_hvt(identifier, max_paths=5)
+            hvt_paths = self.pathfinder.paths_to_hvt(identifier, max_targets=5)
         except Exception:
             hvt_paths = []
 
