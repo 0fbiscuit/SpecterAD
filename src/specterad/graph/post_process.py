@@ -409,6 +409,8 @@ def mark_high_value_targets(
         if not is_hvt and node.node_type == NodeType.COMPUTER:
             if node.properties.get("isdc", False):
                 is_hvt = True
+            elif "OU=DOMAIN CONTROLLERS" in node.properties.get("distinguishedname", "").upper():
+                is_hvt = True
 
         if is_hvt and sid in graph:
             graph.nodes[sid]["high_value"] = True

@@ -16,10 +16,12 @@ import logging
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import click
 from rich.console import Console
 
+from specterad import __version__
 from specterad.engine.pathfinder import Pathfinder
 from specterad.engine.queries import QueryEngine
 from specterad.engine.inventory import InventoryEngine
@@ -96,6 +98,7 @@ def _ensure_loaded(data_path: str | Path | None) -> None:
 
 
 @click.group()
+@click.version_option(__version__, prog_name="SpecterAD")
 @click.option(
     "--data", "-d",
     type=click.Path(exists=True),
