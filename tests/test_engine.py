@@ -524,7 +524,7 @@ class TestRunAll:
         qe = QueryEngine(ag)
 
         results = qe.run_all()
-        assert len(results) == 16
+        assert len(results) == 22
         assert all(isinstance(r, QueryResult) for r in results)
 
 

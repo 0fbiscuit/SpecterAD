@@ -52,6 +52,47 @@ weights:
   GoldenCert:           {detection: 0.7, failure: 0.2, complexity: 0.7}
   ManageCA:             {detection: 0.4, failure: 0.1, complexity: 0.5}
   ManageCertificates:   {detection: 0.4, failure: 0.1, complexity: 0.5}
+  Enroll:               {detection: 0.1, failure: 0.05, complexity: 0.2}
+  AutoEnroll:           {detection: 0.05, failure: 0.02, complexity: 0.1}
+  ADCSESC2:             {detection: 0.3, failure: 0.15, complexity: 0.5}
+  ADCSESC5:             {detection: 0.3, failure: 0.1, complexity: 0.5}
+  ADCSESC6:             {detection: 0.35, failure: 0.15, complexity: 0.5}
+  ADCSESC7:             {detection: 0.4, failure: 0.15, complexity: 0.6}
+  ADCSESC8:             {detection: 0.5, failure: 0.3, complexity: 0.6}
+  ADCSESC9:             {detection: 0.4, failure: 0.2, complexity: 0.6}
+  ADCSESC10:            {detection: 0.4, failure: 0.25, complexity: 0.6}
+  ADCSESC11:            {detection: 0.45, failure: 0.25, complexity: 0.6}
+  ADCSESC12:            {detection: 0.5, failure: 0.3, complexity: 0.7}
+  ADCSESC13:            {detection: 0.4, failure: 0.2, complexity: 0.5}
+
+  # ── ACL Extended ──
+  WriteScriptPath:      {detection: 0.2, failure: 0.1, complexity: 0.3}
+  WriteProfilePath:     {detection: 0.2, failure: 0.1, complexity: 0.3}
+  WriteHomeDirectory:   {detection: 0.2, failure: 0.1, complexity: 0.3}
+  WriteMSDSAllowedToAct: {detection: 0.2, failure: 0.1, complexity: 0.4}
+  AddAllowedToAct:      {detection: 0.2, failure: 0.1, complexity: 0.4}
+  CreateChild:          {detection: 0.15, failure: 0.05, complexity: 0.3}
+  DeleteChild:          {detection: 0.3, failure: 0.1, complexity: 0.3}
+  DeleteTree:           {detection: 0.5, failure: 0.1, complexity: 0.3}
+  WriteGPO:             {detection: 0.3, failure: 0.1, complexity: 0.5}
+
+  # ── Lateral Extended ──
+  CanSSH:               {detection: 0.5, failure: 0.3, complexity: 0.3}
+  RemoteInteractiveLogon: {detection: 0.7, failure: 0.4, complexity: 0.3}
+
+  # ── Coercion ──
+  CoerceToTGT:          {detection: 0.6, failure: 0.3, complexity: 0.5}
+  CoerceToNTLM:         {detection: 0.5, failure: 0.2, complexity: 0.4}
+
+  # ── LAPS Extended ──
+  SyncLAPSPassword:     {detection: 0.2, failure: 0.05, complexity: 0.2}
+
+  # ── DCSync Extended ──
+  GetChangesInFilteredSet: {detection: 0.6, failure: 0.1, complexity: 0.4}
+
+  # ── Composite ──
+  CanConfigureRBCD:     {detection: 0.2, failure: 0.1, complexity: 0.4}
+  TrustedBy:            {detection: 0.0, failure: 0.0, complexity: 0.0}
 
   # ── Structural (non-traversable, but weight defined for completeness) ──
   GPLink:               {detection: 0.0, failure: 0.0, complexity: 0.0}

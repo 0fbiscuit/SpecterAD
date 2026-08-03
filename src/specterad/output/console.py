@@ -257,18 +257,32 @@ class ConsoleRenderer:
                     lines.append(f"    ... and {ginfo['member_count'] - 20} more")
                 lines.append("")
 
-        elif "domains" in data:
+        elif result.section_name == "Structural Inventory":
             # Structural inventory
-            lines.append(f"  Domains: {data['domain_count']}")
-            for d in data["domains"]:
+            lines.append(f"  Domains: {data.get('domain_count', 0)}")
+            for d in data.get("domains", []):
                 lines.append(f"    > {d['name']} (Level: {d['functionallevel']})")
-            lines.append(f"  Domain Controllers: {data['dc_count']}")
-            for dc in data["domain_controllers"]:
+            lines.append(f"  Domain Controllers: {data.get('dc_count', 0)}")
+            for dc in data.get("domain_controllers", []):
                 lines.append(f"    > {dc['name']}")
-            lines.append(f"  Trusts: {data['trust_count']}")
-            for t in data["trusts"]:
+            lines.append(f"  Trusts: {data.get('trust_count', 0)}")
+            for t in data.get("trusts", []):
                 lines.append(f"    > {t['source']} --[{t['type']}]--> {t['target']}")
-            lines.append(f"  OUs: {data['ou_count']}")
+            lines.append(f"  OUs: {data.get('ou_count', 0)}")
+            
+        elif result.section_name == "Domain Security Properties":
+            for d in data.get("domains", []):
+                lines.append(f"  [bold cyan]{d['name']}[/bold cyan]")
+                lines.append(f"    MachineAccountQuota: {d['machineaccountquota']} ({d.get('maq_risk', 'Unknown')})")
+                lines.append(f"    Functional Level: {d['functionallevel']}")
+                lines.append(f"    Recycle Bin Enabled: {d['recyclebin_enabled']}")
+                
+                pol = d.get("password_policy", {})
+                lines.append(f"    Default Password Policy:")
+                lines.append(f"      - Min Length: {pol.get('minpwdlength', 'Unknown')}")
+                lines.append(f"      - History Length: {pol.get('pwdhistorylength', 'Unknown')}")
+                lines.append(f"      - Lockout Threshold: {pol.get('lockoutthreshold', 'Unknown')}")
+                lines.append("")
 
         panel = Panel(
             "\n".join(lines),

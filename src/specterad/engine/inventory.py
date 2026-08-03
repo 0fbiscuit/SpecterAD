@@ -307,6 +307,62 @@ class InventoryEngine:
 
         return stats
 
+    def domain_security_properties(self) -> InventoryResult:
+        """Extract domain-level security properties.
+
+        Covers: MachineAccountQuota, Functional Level, AD Recycle Bin,
+        and default password policy settings from Domain node properties.
+        """
+        domains_info: list[dict[str, Any]] = []
+
+        for sid in self.ad_graph.nodes_by_type.get(NodeType.DOMAIN, []):
+            node_data = self._graph.nodes.get(sid, {})
+            name = self.ad_graph.display_name(sid)
+
+            info: dict[str, Any] = {
+                "sid": sid,
+                "name": name,
+                "functionallevel": node_data.get("functionallevel", "Unknown"),
+                "machineaccountquota": node_data.get("machineaccountquota", "Unknown"),
+            }
+
+            # AD Recycle Bin (from domain properties if present)
+            info["recyclebin_enabled"] = node_data.get(
+                "isrecyclebinenabled",
+                node_data.get("recyclebin", "Unknown"),
+            )
+
+            # Default Domain Password Policy
+            info["password_policy"] = {
+                "minpwdlength": node_data.get("minpwdlength", "Unknown"),
+                "pwdhistorylength": node_data.get("pwdhistorylength", "Unknown"),
+                "lockoutthreshold": node_data.get("lockoutthreshold", "Unknown"),
+                "lockoutduration": node_data.get("lockoutduration", "Unknown"),
+                "maxpwdage": node_data.get("maxpwdage", "Unknown"),
+                "minpwdage": node_data.get("minpwdage", "Unknown"),
+                "pwdproperties": node_data.get("pwdproperties", "Unknown"),
+            }
+
+            # MachineAccountQuota highlight
+            maq = info["machineaccountquota"]
+            if isinstance(maq, int) and maq > 0:
+                info["maq_risk"] = f"HIGH — any user can create up to {maq} machine accounts"
+            elif maq == 0:
+                info["maq_risk"] = "OK — machine account creation disabled"
+            else:
+                info["maq_risk"] = "Unknown"
+
+            domains_info.append(info)
+
+        return InventoryResult(
+            section_name="Domain Security Properties",
+            description="Domain-level security settings: MAQ, functional level, recycle bin, password policy",
+            data={
+                "domains": domains_info,
+                "domain_count": len(domains_info),
+            },
+        )
+
     def run_all(self) -> list[InventoryResult]:
         """Run all inventory analyses."""
         return [
@@ -314,4 +370,5 @@ class InventoryEngine:
             self.stale_accounts(),
             self.privilege_group_membership(),
             self.structural_inventory(),
+            self.domain_security_properties(),
         ]

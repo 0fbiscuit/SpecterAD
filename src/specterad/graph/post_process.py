@@ -32,6 +32,12 @@ _HVT_RID_SUFFIXES: frozenset[str] = frozenset({
     "-518",   # Schema Admins
     "-498",   # Enterprise Domain Controllers
     "-521",   # Read-only Domain Controllers
+    "-548",   # Account Operators
+    "-549",   # Server Operators
+    "-550",   # Print Operators
+    "-551",   # Backup Operators
+    "-526",   # Key Admins
+    "-527",   # Enterprise Key Admins
 })
 
 # Well-known group name patterns (case-insensitive match)
@@ -41,6 +47,28 @@ _HVT_NAME_PATTERNS: frozenset[str] = frozenset({
     "administrators",
     "domain controllers",
     "schema admins",
+    "account operators",
+    "server operators",
+    "backup operators",
+    "print operators",
+    "dnsadmins",
+    "cert publishers",
+    "key admins",
+    "enterprise key admins",
+})
+
+# SPN prefixes that identify critical infrastructure servers
+_HVT_SPN_PREFIXES: tuple[str, ...] = (
+    "adfs/",           # ADFS Server
+    "exchangemdb/",    # Exchange Server
+    "mssqlsvc/",       # SQL Server
+    "sms",             # SCCM/MECM Server
+    "adsync",          # Azure AD Connect
+)
+
+# User names that are always HVT
+_HVT_USER_NAMES: frozenset[str] = frozenset({
+    "krbtgt",
 })
 
 
@@ -383,7 +411,8 @@ def mark_high_value_targets(
     """Identify and mark High-Value Targets in the graph.
 
     HVTs are nodes that represent critical assets an attacker would
-    target: Domain Admins, Enterprise Admins, Domain Controllers, etc.
+    target: Domain Admins, Enterprise Admins, Domain Controllers,
+    Account/Server/Backup/Print Operators, KRBTGT, CA servers, etc.
 
     Returns:
         Set of SIDs that are high-value targets.
@@ -399,10 +428,16 @@ def mark_high_value_targets(
                 is_hvt = True
                 break
 
-        # Check by name pattern
+        # Check by name pattern (groups)
         if not is_hvt and node.name:
             name_lower = node.name.lower().split("@")[0]
             if name_lower in _HVT_NAME_PATTERNS:
+                is_hvt = True
+
+        # Check user names that are always HVT (e.g. krbtgt)
+        if not is_hvt and node.node_type == NodeType.USER and node.name:
+            user_lower = node.name.lower().split("@")[0]
+            if user_lower in _HVT_USER_NAMES:
                 is_hvt = True
 
         # Domain Controllers (computers that are DCs)
@@ -411,6 +446,25 @@ def mark_high_value_targets(
                 is_hvt = True
             elif "OU=DOMAIN CONTROLLERS" in node.properties.get("distinguishedname", "").upper():
                 is_hvt = True
+
+        # Critical infrastructure servers identified by SPN
+        if not is_hvt and node.node_type == NodeType.COMPUTER:
+            spns = node.properties.get("serviceprincipalnames", [])
+            if isinstance(spns, list):
+                for spn in spns:
+                    spn_lower = str(spn).lower()
+                    for prefix in _HVT_SPN_PREFIXES:
+                        if spn_lower.startswith(prefix):
+                            is_hvt = True
+                            break
+                    if is_hvt:
+                        break
+
+        # ADCS objects (EnterpriseCA, RootCA, NTAuthStore)
+        if not is_hvt and node.node_type in (
+            NodeType.ENTERPRISE_CA, NodeType.ROOT_CA, NodeType.NTAUTH_STORE,
+        ):
+            is_hvt = True
 
         if is_hvt and sid in graph:
             graph.nodes[sid]["high_value"] = True

@@ -26,6 +26,15 @@ class EdgeType(str, Enum):
     ADD_KEY_CREDENTIAL_LINK = "AddKeyCredentialLink"
     WRITE_SPN = "WriteSPN"
     WRITE_ACCOUNT_RESTRICTIONS = "WriteAccountRestrictions"
+    WRITE_SCRIPT_PATH = "WriteScriptPath"
+    WRITE_PROFILE_PATH = "WriteProfilePath"
+    WRITE_HOME_DIRECTORY = "WriteHomeDirectory"
+    WRITE_MSDS_ALLOWED_TO_ACT = "WriteMSDSAllowedToAct"
+    ADD_ALLOWED_TO_ACT = "AddAllowedToAct"
+    CREATE_CHILD = "CreateChild"
+    DELETE_CHILD = "DeleteChild"
+    DELETE_TREE = "DeleteTree"
+    WRITE_GPO = "WriteGPO"
 
     # ── Traversable: Execution / Lateral Movement ──
     ADMIN_TO = "AdminTo"
@@ -33,6 +42,8 @@ class EdgeType(str, Enum):
     CAN_PS_REMOTE = "CanPSRemote"
     EXECUTE_DCOM = "ExecuteDCOM"
     SQL_ADMIN = "SQLAdmin"
+    CAN_SSH = "CanSSH"
+    REMOTE_INTERACTIVE_LOGON = "RemoteInteractiveLogon"
 
     # ── Traversable: Delegation ──
     ALLOWED_TO_DELEGATE = "AllowedToDelegate"
@@ -45,6 +56,8 @@ class EdgeType(str, Enum):
     DCSYNC = "DCSync"
     DUMP_SMSA_PASSWORD = "DumpSMSAPassword"
     HAS_SID_HISTORY = "HasSIDHistory"
+    SYNC_LAPS_PASSWORD = "SyncLAPSPassword"
+    GET_CHANGES_IN_FILTERED_SET = "GetChangesInFilteredSet"
 
     # ── Traversable: Group Membership ──
     MEMBER_OF = "MemberOf"
@@ -59,10 +72,15 @@ class EdgeType(str, Enum):
     ADCSESC7 = "ADCSESC7"
     ADCSESC8 = "ADCSESC8"
     ADCSESC9 = "ADCSESC9"
+    ADCSESC10 = "ADCSESC10"
+    ADCSESC11 = "ADCSESC11"
+    ADCSESC12 = "ADCSESC12"
     ADCSESC13 = "ADCSESC13"
     GOLDEN_CERT = "GoldenCert"
     MANAGE_CA = "ManageCA"
     MANAGE_CERTIFICATES = "ManageCertificates"
+    ENROLL = "Enroll"
+    AUTO_ENROLL = "AutoEnroll"
 
     # ── Non-Traversable: Structural ──
     GP_LINK = "GPLink"
@@ -72,6 +90,10 @@ class EdgeType(str, Enum):
 
     # ── Traversable: Composite / Derived ──
     CAN_CONFIGURE_RBCD = "CanConfigureRBCD"
+
+    # ── Traversable: Coercion ──
+    COERCE_TO_TGT = "CoerceToTGT"
+    COERCE_TO_NTLM = "CoerceToNTLM"
 
     # ── Azure / Entra ID Edges ──
     AZ_GLOBAL_ADMIN = "AZGlobalAdmin"
@@ -131,6 +153,21 @@ ACE_RIGHT_TO_EDGE: dict[str, EdgeType] = {
     "Member": EdgeType.ADD_MEMBER,
     "ManageCA": EdgeType.MANAGE_CA,
     "ManageCertificates": EdgeType.MANAGE_CERTIFICATES,
+    "Enroll": EdgeType.ENROLL,
+    "AutoEnroll": EdgeType.AUTO_ENROLL,
+    "WriteScriptPath": EdgeType.WRITE_SCRIPT_PATH,
+    "WriteProfilePath": EdgeType.WRITE_PROFILE_PATH,
+    "WriteHomeDirectory": EdgeType.WRITE_HOME_DIRECTORY,
+    "WriteMSDSAllowedToAct": EdgeType.WRITE_MSDS_ALLOWED_TO_ACT,
+    "AddAllowedToAct": EdgeType.ADD_ALLOWED_TO_ACT,
+    "CreateChild": EdgeType.CREATE_CHILD,
+    "DeleteChild": EdgeType.DELETE_CHILD,
+    "DeleteTree": EdgeType.DELETE_TREE,
+    "WriteGPO": EdgeType.WRITE_GPO,
+    "SyncLAPSPassword": EdgeType.SYNC_LAPS_PASSWORD,
+    "CoerceToTGT": EdgeType.COERCE_TO_TGT,
+    "CoerceToNTLM": EdgeType.COERCE_TO_NTLM,
+    "GetChangesInFilteredSet": EdgeType.GET_CHANGES_IN_FILTERED_SET,
     # NOTE: GetChanges / GetChangesAll are NOT mapped here.
     # DCSync is a composite edge requiring BOTH rights on a Domain object.
     # It is derived exclusively by post_process.derive_dcsync_edges().

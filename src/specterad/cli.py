@@ -306,9 +306,11 @@ def cmd_path(
     "query_name",
     type=click.Choice([
         "kerberoastable", "asreproast", "unconstrained",
+        "constrained", "s4u2self",
         "dcsync", "da-sessions", "hvt",
         "shadow-creds", "pwd-in-desc", "pwd-never-expires",
         "pwd-not-required", "priv-roast",
+        "laps", "gmsa", "smartcard", "sensitive-not-delegated",
         "domain-trusts", "rbcd-configurable",
         "all-users", "all-groups", "all-computers", "all",
     ]),
@@ -325,6 +327,10 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
 
         unconstrained     Computers with unconstrained delegation
 
+        constrained       Accounts with constrained delegation
+
+        s4u2self          Accounts with TrustedToAuthForDelegation
+
         dcsync            Principals with DCSync rights
 
         da-sessions       Computers with DA sessions
@@ -340,6 +346,14 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
         pwd-not-required  Users with PASSWD_NOTREQD
 
         priv-roast        Roastable users with admin privileges
+
+        laps              Computer LAPS status
+
+        gmsa              Group Managed Service Accounts
+
+        smartcard         Users not requiring smartcard logon
+
+        sensitive-not-delegated  Privileged users without NOT_DELEGATED
 
         all-users         List all users
 
@@ -359,6 +373,8 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
         "kerberoastable": qe.kerberoastable_users,
         "asreproast": qe.asrep_roastable_users,
         "unconstrained": qe.unconstrained_delegation,
+        "constrained": qe.constrained_delegation,
+        "s4u2self": qe.trusted_to_auth_for_delegation,
         "dcsync": qe.dcsync_principals,
         "da-sessions": qe.da_sessions,
         "hvt": qe.high_value_targets,
@@ -367,6 +383,10 @@ def cmd_query(ctx: click.Context, query_name: str) -> None:
         "pwd-never-expires": qe.password_never_expires,
         "pwd-not-required": qe.password_not_required,
         "priv-roast": qe.privileged_roast,
+        "laps": qe.laps_computers,
+        "gmsa": qe.gmsa_accounts,
+        "smartcard": qe.smartcard_not_required,
+        "sensitive-not-delegated": qe.sensitive_not_delegated,
         "domain-trusts": qe.domain_trusts,
         "rbcd-configurable": qe.rbcd_configurable,
         "all-users": qe.all_users,

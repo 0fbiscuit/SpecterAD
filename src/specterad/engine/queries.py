@@ -458,12 +458,171 @@ class QueryEngine:
             count=len(results),
         )
 
+    def constrained_delegation(self) -> QueryResult:
+        """Find computers/users with constrained delegation configured.
+
+        Attack: Protocol transition → impersonate any user to the
+        services listed in msDS-AllowedToDelegateTo.
+        """
+        results: list[dict[str, Any]] = []
+        for node_type in (NodeType.COMPUTER, NodeType.USER):
+            for sid in self.ad_graph.nodes_by_type.get(node_type, []):
+                node_data = self._graph.nodes.get(sid, {})
+                targets = node_data.get("allowedtodelegate", [])
+                if targets:
+                    results.append({
+                        "sid": sid,
+                        "name": self.ad_graph.display_name(sid),
+                        "node_type": node_type.value,
+                        "delegate_to": targets if isinstance(targets, list) else [targets],
+                    })
+
+        return QueryResult(
+            query_name="Constrained Delegation",
+            description="Accounts with constrained delegation — can impersonate users to specific services",
+            results=results,
+            count=len(results),
+        )
+
+    def trusted_to_auth_for_delegation(self) -> QueryResult:
+        """Find accounts with TrustedToAuthForDelegation (S4U2Self abuse).
+
+        Attack: Protocol transition allows S4U2Self → obtain forwardable
+        TGS as any user without their password.
+        """
+        results: list[dict[str, Any]] = []
+        for node_type in (NodeType.COMPUTER, NodeType.USER):
+            for sid in self.ad_graph.nodes_by_type.get(node_type, []):
+                node_data = self._graph.nodes.get(sid, {})
+                if node_data.get("trustedtoauth", False):
+                    results.append({
+                        "sid": sid,
+                        "name": self.ad_graph.display_name(sid),
+                        "node_type": node_type.value,
+                    })
+
+        return QueryResult(
+            query_name="Trusted To Auth For Delegation",
+            description="Accounts with protocol transition enabled — S4U2Self abuse risk",
+            results=results,
+            count=len(results),
+        )
+
+    def laps_computers(self) -> QueryResult:
+        """Find computers with LAPS enabled or disabled.
+
+        LAPS-enabled computers rotate local admin passwords automatically.
+        Computers WITHOUT LAPS are higher risk for credential reuse.
+        """
+        with_laps: list[dict[str, Any]] = []
+        without_laps: list[dict[str, Any]] = []
+        for sid in self.ad_graph.nodes_by_type.get(NodeType.COMPUTER, []):
+            node_data = self._graph.nodes.get(sid, {})
+            has_laps = bool(node_data.get("haslaps", False))
+            entry = {
+                "sid": sid,
+                "name": self.ad_graph.display_name(sid),
+                "haslaps": has_laps,
+            }
+            if has_laps:
+                with_laps.append(entry)
+            else:
+                without_laps.append(entry)
+
+        # Return computers WITHOUT LAPS as primary findings (higher risk)
+        results = without_laps + with_laps
+        return QueryResult(
+            query_name="LAPS Status",
+            description=f"Computer LAPS status — {len(without_laps)} without LAPS (risk), {len(with_laps)} with LAPS",
+            results=results,
+            count=len(results),
+        )
+
+    def gmsa_accounts(self) -> QueryResult:
+        """Find Group Managed Service Accounts (gMSA).
+
+        gMSA passwords can be read by authorized principals via
+        ReadGMSAPassword edges.
+        """
+        results: list[dict[str, Any]] = []
+        for sid in self.ad_graph.nodes_by_type.get(NodeType.USER, []):
+            node_data = self._graph.nodes.get(sid, {})
+            name = self.ad_graph.display_name(sid)
+            # gMSA objects typically have gmsa-related properties or
+            # end with $ like computer accounts
+            if node_data.get("gmsa", False) or node_data.get("isgmsa", False):
+                results.append({
+                    "sid": sid,
+                    "name": name,
+                    "node_type": "User",
+                })
+
+        return QueryResult(
+            query_name="gMSA Accounts",
+            description="Group Managed Service Accounts — check ReadGMSAPassword edges for readers",
+            results=results,
+            count=len(results),
+        )
+
+    def smartcard_not_required(self) -> QueryResult:
+        """Find users where smart card logon is NOT required.
+
+        Users without SMARTCARD_REQUIRED can authenticate with passwords,
+        which may be weaker than certificate-based authentication.
+        """
+        results: list[dict[str, Any]] = []
+        for sid in self.ad_graph.nodes_by_type.get(NodeType.USER, []):
+            node_data = self._graph.nodes.get(sid, {})
+            # smartcardlogonrequired is False or missing = not required
+            if not node_data.get("smartcardlogonrequired", False):
+                if node_data.get("enabled", True):
+                    results.append({
+                        "sid": sid,
+                        "name": self.ad_graph.display_name(sid),
+                        "enabled": True,
+                    })
+
+        return QueryResult(
+            query_name="Smartcard Not Required",
+            description="Enabled users that do NOT require smartcard logon",
+            results=results,
+            count=len(results),
+        )
+
+    def sensitive_not_delegated(self) -> QueryResult:
+        """Find privileged users NOT marked as 'sensitive and cannot be delegated'.
+
+        Best practice: privileged accounts (admincount=1) should have the
+        NOT_DELEGATED flag set to prevent delegation abuse.
+        """
+        results: list[dict[str, Any]] = []
+        for sid in self.ad_graph.nodes_by_type.get(NodeType.USER, []):
+            node_data = self._graph.nodes.get(sid, {})
+            if node_data.get("admincount", False):
+                is_sensitive = node_data.get("sensitive", False)
+                if not is_sensitive:
+                    results.append({
+                        "sid": sid,
+                        "name": self.ad_graph.display_name(sid),
+                        "admincount": True,
+                        "sensitive": False,
+                    })
+
+        return QueryResult(
+            query_name="Sensitive Not Delegated",
+            description="Privileged users (admincount=1) without NOT_DELEGATED flag — delegation abuse risk",
+            results=results,
+            count=len(results),
+        )
+
     def run_all(self) -> list[QueryResult]:
         """Run all pre-built queries and return results."""
         return [
             self.kerberoastable_users(),
             self.asrep_roastable_users(),
             self.unconstrained_delegation(),
+            self.constrained_delegation(),
+            self.trusted_to_auth_for_delegation(),
             self.dcsync_principals(),
             self.da_sessions(),
             self.high_value_targets(),
@@ -472,6 +631,10 @@ class QueryEngine:
             self.password_never_expires(),
             self.password_not_required(),
             self.privileged_roast(),
+            self.laps_computers(),
+            self.gmsa_accounts(),
+            self.smartcard_not_required(),
+            self.sensitive_not_delegated(),
             self.domain_trusts(),
             self.rbcd_configurable(),
             self.all_users(),

@@ -19,6 +19,12 @@ class NodeType(str, Enum):
     CERTTEMPLATE = "CertTemplate"
     CONTAINER = "Container"
 
+    # ── ADCS Infrastructure ──
+    ENTERPRISE_CA = "EnterpriseCA"
+    ROOT_CA = "RootCA"
+    NTAUTH_STORE = "NTAuthStore"
+    AIACA = "AIACA"
+
     # ── Azure / Entra ID ──
     AZ_TENANT = "AZTenant"
     AZ_USER = "AZUser"
@@ -44,6 +50,10 @@ META_TYPE_MAP: dict[str, NodeType] = {
     "gpos": NodeType.GPO,
     "certtemplates": NodeType.CERTTEMPLATE,
     "containers": NodeType.CONTAINER,
+    "enterprisecas": NodeType.ENTERPRISE_CA,
+    "rootcas": NodeType.ROOT_CA,
+    "ntauthstores": NodeType.NTAUTH_STORE,
+    "aiacas": NodeType.AIACA,
     # Azure / Entra ID types (AzureHound meta.type)
     "aztenants": NodeType.AZ_TENANT,
     "azusers": NodeType.AZ_USER,
