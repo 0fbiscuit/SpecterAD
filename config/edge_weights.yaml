@@ -1,4 +1,4 @@
-# Edge Weight Configuration for Mini BloodHound
+# Edge Weight Configuration for SpecterAD
 #
 # Each edge type has three risk dimensions:
 #   detection:  0.0 (silent/undetectable) → 1.0 (very noisy, triggers alerts)
