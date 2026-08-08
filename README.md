@@ -394,6 +394,4 @@ dot -Tsvg graph.dot -o graph.svg
 
 1. **SharpHound version**: SpecterAD supports SharpHound v2+ JSON format (with `meta.type` and `data` array).
 2. **Large files**: Files >200MB automatically switch to streaming parser (ijson) to save RAM.
-3. **Azure/Entra ID**: Azure module is currently a skeleton - needs AzureHound data for full testing.
-4. **Windows console**: Output uses ASCII-safe characters (`safe_box=True`) for Windows cp1252 compatibility.
-5. **Edge weights**: Can be customized in `config/edge_weights.yaml` - lower weight = more attractive path.
+3. **Edge weights**: Can be customized in `config/edge_weights.yaml` - lower weight = more attractive path.
