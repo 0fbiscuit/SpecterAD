@@ -1,4 +1,4 @@
-﻿"""Path formatting utilities — risk labels, color coding, edge icons."""
+"""Path formatting utilities — risk labels, color coding, edge icons."""
 
 from __future__ import annotations
 
@@ -24,35 +24,6 @@ RISK_THRESHOLDS: list[tuple[float, str, str]] = [
     (float("inf"), "CRITICAL", "bold red"),
 ]
 
-# ── Edge type icons for visual flair ──
-EDGE_ICONS: dict[str, str] = {
-    "MemberOf": "👥",
-    "AdminTo": "🔑",
-    "HasSession": "💻",
-    "GenericAll": "⚡",
-    "GenericWrite": "✏️",
-    "WriteDacl": "🔓",
-    "WriteOwner": "👑",
-    "ForceChangePassword": "🔐",
-    "DCSync": "☠️",
-    "CanRDP": "🖥️",
-    "CanPSRemote": "🐚",
-    "ExecuteDCOM": "⚙️",
-    "ADCSESC1": "📜",
-    "ADCSESC3": "📜",
-    "ADCSESC4": "📜",
-    "Owns": "👑",
-    "AllExtendedRights": "⚡",
-    "ReadLAPSPassword": "🔑",
-    "ReadGMSAPassword": "🔑",
-    "AllowedToDelegate": "🔄",
-    "AllowedToAct": "🔄",
-    "HasSIDHistory": "🕰️",
-    "AddMember": "➕",
-    "AddKeyCredentialLink": "🔗",
-}
-
-
 def get_risk_label(weight: float) -> tuple[str, str]:
     """Get risk level label and color for a given weight.
 
@@ -68,11 +39,6 @@ def get_risk_label(weight: float) -> tuple[str, str]:
 def get_node_color(node_type: str) -> str:
     """Get Rich color for a node type."""
     return NODE_COLORS.get(node_type, "white")
-
-
-def get_edge_icon(edge_type: str) -> str:
-    """Get emoji icon for an edge type."""
-    return EDGE_ICONS.get(edge_type, "→")
 
 
 def format_weight(weight: float) -> str:
