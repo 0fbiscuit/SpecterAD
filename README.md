@@ -7,6 +7,52 @@ It operates entirely in-memory, requiring no Neo4j or BloodHound GUI.
 
 ---
 
+### Architecture
+
+```mermaid
+graph LR
+  subgraph "Phase 1: Ingestor"
+    A[loader.py] --> B[parser.py]
+    B --> C[normalizer.py]
+    A2[azure_parser.py] --> C
+  end
+
+  subgraph "Phase 2: Graph"
+    C --> D[builder.py]
+    D --> E[post_process.py]
+  end
+
+  subgraph "Phase 3: Engine"
+    E --> F[pathfinder.py]
+    E --> G[queries.py]
+    E --> H[inventory.py]
+    E --> I[dossier.py]
+    E --> J[remediation.py]
+    E --> K[azure_queries.py]
+    E --> L[weights.py]
+  end
+
+  subgraph "Phase 4: Output"
+    F --> M[console.py]
+    G --> M
+    F --> N[export.py]
+    G --> O[csv_pack.py]
+    M --> P[formatter.py]
+  end
+
+  subgraph "CLI"
+    Q[cli.py] --> F
+    Q --> G
+    Q --> H
+    Q --> I
+    Q --> J
+    Q --> N
+    Q --> O
+  end
+```
+
+---
+
 ## Installation
 
 ```bash
