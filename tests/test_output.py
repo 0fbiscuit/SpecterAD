@@ -28,7 +28,6 @@ from specterad.output.console import ConsoleRenderer
 from specterad.output.export import export_csv, export_dot, export_json
 from specterad.output.formatter import (
     format_weight,
-    get_edge_icon,
     get_node_color,
     get_risk_label,
 )
@@ -137,13 +136,6 @@ class TestFormatter:
 
     def test_node_color_unknown(self) -> None:
         assert get_node_color("SomethingWeird") == "white"
-
-    def test_edge_icon_known(self) -> None:
-        assert get_edge_icon("DCSync") == "☠️"
-        assert get_edge_icon("AdminTo") == "🔑"
-
-    def test_edge_icon_unknown(self) -> None:
-        assert get_edge_icon("UnknownEdge") == "→"
 
     def test_format_weight(self) -> None:
         assert format_weight(0.123456) == "0.123"

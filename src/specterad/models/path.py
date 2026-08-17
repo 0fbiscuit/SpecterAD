@@ -53,6 +53,6 @@ class AttackPath:
         if not self.steps:
             return "AttackPath(empty)"
         return (
-            f"AttackPath({self.source_name} → {self.target_name}, "
+            f"AttackPath({self.source_name} -> {self.target_name}, "
             f"{self.hop_count} hops, weight={self.total_weight:.3f})"
         )
